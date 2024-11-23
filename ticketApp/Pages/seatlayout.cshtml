@@ -1,0 +1,60 @@
+@page
+@model ticketApp.Pages.seatlayout
+
+@{
+    Layout = "_Layout";
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+<div class="screenLayout">
+    <div>
+        <select name="screen" id="screen">
+            @foreach (var screen in Model.Screens)
+            {
+                <option value="@screen.Id">@screen.Title</option>
+            }
+        </select>
+        <select name="ticketTpe" id="ticketType">
+            @foreach (var ticket in Model.TicketTypes)
+            {
+                <option value="@ticket.Id">@ticket.Title</option>
+            }
+        </select>
+        <!-- Password Input -->
+        <label for="password">Enter Password:</label>
+        <input type="password" id="password" name="password" placeholder="Enter password" required><br><br>
+    </div>
+    <button id="btnCreate">Hello</button>
+</div>
+@section Scripts {
+    <script>
+        debugger
+        $("#btnCreate").off().on("click",function (){
+            let $taregetEle=$(".screenLayout");
+            let screen=$taregetEle.find("#screen").val(),ticketType=$taregetEle.find("#ticketType").val(),
+            password=$taregetEle.find("#password").val();
+           
+            $.ajax({
+                url: `/seatlayout?handler=GenerateSeatLayout&screenId=${screen}&ticketTypeId=${ticketType}&password=${password}`,
+                method: 'GET',
+                contentType: 'application/json',
+                success: function(data) {
+                    debugger
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching data: ' + error);
+                    console.log('XHR response:', xhr);  // More detailed error info
+                },
+            });
+        });
+    
+    </script>
+}
+</body>
+</html>

@@ -1,0 +1,110 @@
+@page
+@using ticketApp.Pages.Shared
+@model ticketApp.Pages.movie
+
+@{
+    Layout = "_Layout";
+}
+<header>
+    <link rel="stylesheet" href="css/movie.css" />
+</header>
+@{
+    ViewData["Title"] = "Movie";
+}
+<div class="tbl-container">
+@foreach (var movie in Model.Movies)
+{
+    //<div data-id="{@movie.Id}">@movie.Title</div>
+   
+    @foreach (var show in @movie.Shows)
+    {
+         <div class="movieshow tbl-column" data-show="@show.Id">
+            <h3>@movie.Title</h3>
+            <h5>@show.StartTime</h5>
+            <h6>@show.Screen</h6>
+            </div>
+    }
+   
+}
+</div>
+
+
+<div id="divSeatLayout">
+    <div id="layout"></div>
+    <div class="btnPrint hdn">
+        <button id="btnPrint"> Purchase</button>
+    </div>
+</div>
+@section Scripts {
+    <script>
+    $(".movieshow").off().on("click",function (){
+    $(".movieshow").removeClass("active")
+    $(this).addClass("active");
+        let showId=$(this).attr("data-show");   
+        bindSeatLayout(showId);     
+    });
+    $("#btnPrint").off().on("click",function (){
+            let $taregetEle=$("#divSeatLayout");
+            if ($taregetEle.find("span.selected").length<1) return;
+            let seatIds="",showId=$taregetEle.find("table").attr("data-show");
+            $.each($taregetEle.find("span.selected"),function (){
+                seatIds+=$(this).attr("data-id")+",";
+            })
+            seatIds=seatIds.slice(0,-1);
+            $.ajax({
+                url: `/movie?handler=PurchaseTicket&showId=${showId}&seatIds=${seatIds}`,
+                method: 'GET',
+                contentType: 'application/json',
+                success: function(data) {
+                    if (typeof(data)=="undefined")
+                    return;
+                    window.location.href=`print://ticket?id=${data.id}`;
+                    bindSeatLayout($taregetEle.find("table").attr("data-show"));
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching data: ' + error);
+                    console.log('XHR response:', xhr);  // More detailed error info
+                },
+            });
+    });
+    function bindSeatLayout(showId){
+        $.ajax({
+            url: "/movie?handler=GetScreenLayoutWithSeatStatus&showId=" + showId,
+            method: 'GET',
+            contentType: 'application/json',
+            data:JSON.stringify({showId:1}),
+            success: function(data) {
+                if (typeof(data.rows)=="undefined")
+                    return;
+                let html=`<table data-show="${showId}"><tbody>`;
+                html+=`<div data-screen="${data.screen.id}" data-row="${data.screen.row}" data-col="${data.screen.column}" data-seats="${data.screen.seats}"><p>${data.screen.title}</p></div>`;
+                $.each(data.rows,function (index,row){
+                    html+=`<tr data-row="${row.rowNo}">`;
+                    $.each(row.seats, function (index,seat){
+                        html+=`<td data-col="${seat.colNo}"><span class="${seat.status.toLowerCase()}" data-id="${seat.id}">${(seat.seatNo)==null?"":seat.seatNo}</span></td>`;
+                    });
+                    html+=`</tr>`;
+                });
+                html+=`</tbody></table>`;
+                $("#layout").html(html);
+                registerClickEvent();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching data: ' + error);
+                console.log('XHR response:', xhr);  // More detailed error info
+            },
+        });
+    }
+    function registerClickEvent(){
+        $(".available, .selected").off().on('click',function (){
+            let $this=$(this);            
+            if ($this.hasClass("available")) $this.removeClass("available").addClass("selected");
+            else $this.removeClass("selected").addClass("available");
+            if ($(".selected").length>0) $(".btnPrint").removeClass("hdn");
+            else $(".btnPrint").removeClass("hdn").addClass("hdn");
+        });
+    }
+</script>
+}
+
+

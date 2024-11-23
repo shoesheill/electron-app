@@ -1,0 +1,58 @@
+/* General table styling */
+table {
+    border-collapse: collapse;
+    margin: 20px auto;
+}
+
+td {
+    width: 50px; /* Adjust width as needed */
+    height: 50px; /* Adjust height as needed */
+    text-align: center;
+    vertical-align: middle;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9; /* Light background */
+    position: relative;
+}
+
+/* Style for the span inside each td */
+td span {
+    display: inline-block;
+    width: 100%; /* Ensure span takes the full width */
+    height: 100%; /* Ensurle span takes the full height */
+    line-height: 50px; /* Vertically center text, match td height */
+    font-size: 14px;
+    color: #333; /* Text color */
+    box-sizing: border-box;
+    cursor: pointer;
+    font-weight: bold;
+}
+td span.selected{
+    background-color: #56c691;
+}
+td span.sold{
+    background-color: #b02a37;
+    cursor: default;
+    pointer-events: none;
+}
+td span.available{
+    background-color: #f9f9f9;
+}
+/* For spans with no text */
+td span:empty::after {
+    content: '\00a0'; /* Non-breaking space to reserve space */
+    display: inline-block;
+}
+.tbl-container{
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+}
+.tbl-column{
+    padding: 10px;
+    user-select: none;
+}
+
+.tbl-column.active{
+    border: 1px solid #08c3f3;    
+}

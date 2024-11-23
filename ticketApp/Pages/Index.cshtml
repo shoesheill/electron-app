@@ -1,0 +1,41 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <p class="currentTime"></p>
+</div>
+
+@section Scripts
+{
+    <script>
+        function updateTime() {
+            const currentDate = new Date();
+
+            // Format the date and time without seconds
+            const formattedDateTime = currentDate.toLocaleString('en-US', {
+                weekday: 'long', // Full weekday name (e.g., "Monday")
+                year: 'numeric', // Full year (e.g., "2024")
+                month: 'long', // Full month name (e.g., "November")
+                day: 'numeric', // Day of the month (e.g., "21")
+                hour: '2-digit', // Hour in 2-digit format
+                minute: '2-digit', // Minute in 2-digit format
+                hour12: true // 12-hour format with AM/PM
+            });
+
+            // Update the current year and current time on the page
+            $(".currentYear").text(currentDate.getFullYear());
+            $(".currentTime").text(formattedDateTime);
+        }
+
+        // Call the updateTime function immediately to set the initial values
+        updateTime();
+
+        // Set an interval to update the time every minute (60000ms)
+        setInterval(updateTime, 10000);
+    </script>
+}
