@@ -56,3 +56,6 @@ td span:empty::after {
 .tbl-column.active{
     border: 1px solid #08c3f3;    
 }
+.dn{
+    display: none;
+}

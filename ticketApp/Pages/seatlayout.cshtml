@@ -1,5 +1,5 @@
 @page
-@model ticketApp.Pages.seatlayout
+@model ticketApp.Pages.seatlayoutModel
 
 @{
     Layout = "_Layout";
@@ -9,7 +9,7 @@
 
 <html>
 <head>
-    <title></title>
+    <link rel="stylesheet" href="css/movie.css" />
 </head>
 <body>
 <div class="screenLayout">
@@ -20,40 +20,135 @@
                 <option value="@screen.Id">@screen.Title</option>
             }
         </select>
-        <select name="ticketTpe" id="ticketType">
+        <select class="dn" name="ticketTpe" id="ticketType">
             @foreach (var ticket in Model.TicketTypes)
             {
                 <option value="@ticket.Id">@ticket.Title</option>
             }
         </select>
         <!-- Password Input -->
-        <label for="password">Enter Password:</label>
-        <input type="password" id="password" name="password" placeholder="Enter password" required><br><br>
+        <button id="btnGetLayout">sdfdsfdsfs</button>
     </div>
-    <button id="btnCreate">Hello</button>
 </div>
+<form method="post">
+    <table id="tblScreenLayout"> 
+    </table>
+    <button type="submit">Save</button>
+</form>
+
+
+
 @section Scripts {
-    <script>
-        debugger
-        $("#btnCreate").off().on("click",function (){
-            let $taregetEle=$(".screenLayout");
-            let screen=$taregetEle.find("#screen").val(),ticketType=$taregetEle.find("#ticketType").val(),
-            password=$taregetEle.find("#password").val();
-           
-            $.ajax({
-                url: `/seatlayout?handler=GenerateSeatLayout&screenId=${screen}&ticketTypeId=${ticketType}&password=${password}`,
-                method: 'GET',
-                contentType: 'application/json',
-                success: function(data) {
-                    debugger
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error fetching data: ' + error);
-                    console.log('XHR response:', xhr);  // More detailed error info
-                },
+    <script>      
+    changeEvents();
+    function changeEvents(){
+    $(".txtRow").off().on('change',function (){
+    let $this=$(this);
+    let val=$this.val();
+    if (typeof(val)==="undefined" || val ==="") return;
+        $this.closest('tr').find(".seatCol").each(function() {
+        let current=$(this).find(".seatNo").text();
+            $(this).find(".seatNo").text(val + current);
+            $(this).find(".chkSeatNo").val(val + current);
+        });
+    });
+    $(".chkRow").off().on('change',function (){
+        let $this=$(this);
+        let val=$this.is(":checked");
+           $this.closest('tr').find(".chkSeatNo").each(function() {
+                //$(this).prop("checked",val);
+                $(this).click();
             });
         });
-    
+        $(".chkSeatNo").on("click", function () {
+            // Get the current row of the clicked checkbox
+            const row = $(this).closest("tr");
+
+            // Get the index of the clicked checkbox (within the seatCol td)
+            const index = $(this).closest('td.seatCol').index();
+
+            // Get the row name from the .txtRow element in the same row
+            let rowName = $(this).closest("tr").find(".txtRow").val();
+
+            // Loop through all checkboxes from the clicked one to the end of the row
+            row.find("td.seatCol").each(function (i) {
+                const checkbox = $(this).find("input.chkSeatNo");
+
+                // Calculate how many checkboxes are checked before the current one
+                const checkedBeforeCount = row.find("td.seatCol").slice(0, i).find("input.chkSeatNo:checked").length;
+                console.log("Checked before count for this checkbox at index " + i + ": " + checkedBeforeCount);
+
+                // Get the seat number span
+                const seatNoSpan = $(this).find(".seatNo");
+                const chkSeatNoSpan = $(this).find(".chkSeatNo");
+
+                // Check if the checkbox is checked
+                if (checkbox.is(":checked")) {
+                    // If checked, update the value of the corresponding seatNo span
+                    const seatNo = seatNoSpan.text();
+                    seatNoSpan.text(rowName+(checkedBeforeCount + 1)); // Increment the count for each checked checkbox
+                    chkSeatNoSpan.val(rowName+(checkedBeforeCount + 1));
+                } else {
+                    // If not checked, set the text as blank
+                    seatNoSpan.text("");
+                    chkSeatNoSpan.val("");
+                }
+            });
+            // Loop through all checkboxes after the clicked one and update if checked
+            //row.find("td").slice(index + 1).each(function () {
+               // const checkbox = $(this).find("input.chkSeatNo");
+
+                // Check if the checkbox is checked
+                //if (checkbox.is(":checked")) {
+                    // Update the value of the corresponding seatNo span
+                   // const seatNoSpan = $(this).find(".seatNo");
+                   // const seatNo = seatNoSpan.text();
+                   // seatNoSpan.text("Updated " + seatNo); // Modify this to your preferred text update
+                //}
+            //});
+        });
+
+        $("#btnGetLayout").off().on('click',function (){
+        let $taregetEle=$(".screenLayout");
+        let screenId=$taregetEle.find("#screen").val();
+        $.ajax({
+            url: `/seatlayout?handler=ScreenSeatLayout&screenId=${screenId}`,
+            method: 'GET',
+            contentType: 'application/json',
+            success: function(data) {
+            debugger
+                if (typeof(data)==="undefined") return;
+                screen = data.screen[0];
+                let rowCount=screen.row, colCount=screen.column;
+                let html='';
+                html+=`<input type="hidden" name="screenId" value="${screenId}" />`;
+                html+=`<label for="password">Enter Password:</label><input type="password" id="password" name="password" placeholder="Enter password" required="">`;
+                for (let i=1; i<=rowCount;i++){                
+                html+=`<tr data-row="${data?.seats?.[i-1]?.rowNo??i}">`;
+                html+=`<td><select class="slcTkt" name="ticketType_${i}"></select></td>`;
+                    html+=`<td><input type="checkbox" class="chkRow"/></td><td><input type="text" name="rowText_${i}" value="${data?.seats?.[i-1]?.rowName??""}" class="txtRow" placeholder="Row Name"/></td>`;
+                    for (let c=1; c<=colCount;c++){
+                        html+=`<td class="seatCol" data-col="${c}"><input type="checkbox" class="chkSeatNo" name="seat_${i}_${c}" ${(data?.seats?.[i-1]?.seats?.[c-1]?.isActive==true)?"checked":""} value="${data?.seats?.[i-1]?.seats?.[c-1]?.seatNo??parseInt(c)}"><span class="seatNo">${data?.seats?.[i-1]?.seats?.[c-1]?.seatNo??parseInt(c)}</span></td>`;
+                        }
+                html+=`</tr>`;
+                }
+                
+                $("#tblScreenLayout").html(html);
+                $(".slcTkt").html($("#ticketType").html());
+                debugger
+                $.each(data?.seats, function (index, val){
+                $(`.slcTkt[name="ticketType_${index+1}"]`).val(val.ticketTypeId);
+                })
+                changeEvents();
+                
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching data: ' + error);
+                console.log('XHR response:', xhr);  // More detailed error info
+            },
+        });
+    });
+    }
     </script>
 }
 </body>

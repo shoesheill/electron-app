@@ -1,4 +1,6 @@
-﻿using PosPrinterApp.Helper;
+﻿using OfficeOpenXml;
+using PosPrinterApp.DTO;
+using PosPrinterApp.Helper;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -12,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TicketApp;
 using TicketApp.Helper;
+using TicketApp.Models;
 
 namespace PosPrinterApp
 {
@@ -19,6 +22,7 @@ namespace PosPrinterApp
     public enum PrintPaperType { Ticket };
 
     public enum PrintType { Preview, Dialog, Default };
+    
     public class DynamicTicketPrintInfo
     {
         public object DynamicInfo { get; set; }=  new DynamicTicketPrintInfo
@@ -65,6 +69,8 @@ namespace PosPrinterApp
         private PageSettings printerPageSetting = null;
 
         private int rightMargin = 10;
+        public TicketDto ticketDetail =null;
+        public Theater theater = null;
 
         /// <summary>
         /// Default Constructor
@@ -99,7 +105,7 @@ namespace PosPrinterApp
                 PrintDOC.PrinterSettings.DefaultPageSettings.Margins.Top = 0;
             }
 
-            if (StaticData.IsCCMS)
+            if (theater.IsCCMS)
                 PrintDOC.PrintPage += new PrintPageEventHandler(_printDoc_PrintPage);
             else
                 PrintDOC.PrintPage += new PrintPageEventHandler(Ticket_NewPrintPage);
@@ -171,7 +177,7 @@ namespace PosPrinterApp
         { return g.MeasureString(text.ToString(), font); }
         private void _printDoc_PrintPage(object sender, PrintPageEventArgs e)
         {
-            TicketDetails ticket = StaticData.lstTicket.Where(c => c.ID == StaticData.ID).First();
+            //TicketDetails ticket = StaticData.lstTicket.Where(c => c.ID == StaticData.ID).First();
             bool ApplyVatInComplementry = false;
 
             bool ApplyFDFInComplementry = false;
@@ -179,16 +185,15 @@ namespace PosPrinterApp
             bool EnableTaxRegistration = true;
             bool ShowLogoOnTicket = true;
 
-            float TotalCost = 0;
-            float EntranceFee = 0;
-            float FDF = 0;
-            float VAT = 0;
-            float LocalTax = 0;
-            float ThreeDCharge = 0;
-            float ConvinienceCharge = 0;
-            float discount = 0;
-
-            float tempTotal = 1000;
+            decimal TotalCost = 0;
+            decimal EntranceFee = 0;
+            decimal FDF = 0;
+            decimal VAT = 0;
+            decimal LocalTax = 0;
+            decimal ThreeDCharge = 0;
+            decimal ConvinienceCharge = 0;
+            decimal discount = 0;
+            decimal tempTotal = 1000;
             TotalCost = 0;
             EntranceFee = 0;
             FDF = 0;
@@ -202,20 +207,20 @@ namespace PosPrinterApp
             bool _isRePrint = false;
 
 
-            if (ticket.IsInternational.Equals("1"))
+            if (ticketDetail.IsInternational)
             {
-                EntranceFee = ticket.Price / ((1 + StaticData.BoxOfficeTax + StaticData.LocalTax) * (1 + StaticData.EntertainmentTax));
-                FDF = EntranceFee * StaticData.BoxOfficeTax;
+                EntranceFee = ticketDetail.Price / ((1 + (theater.BoxOfficeTax/100) + (theater.LocalTax/100)) * (1 + (theater.EntertainmentTax / 100)));
+                FDF = EntranceFee * (theater.BoxOfficeTax/100);
             }
             else
             {
-                EntranceFee = ticket.Price / ((1 + StaticData.EntertainmentTax) * (1 + StaticData.LocalTax));
+                EntranceFee = ticketDetail.Price / ((1 + (theater.EntertainmentTax / 100)) * (1 + (theater.LocalTax / 100)));
             }
-            LocalTax = EntranceFee * StaticData.LocalTax;
-            VAT = (EntranceFee + FDF + LocalTax) * StaticData.EntertainmentTax;
-            ConvinienceCharge = StaticData.ConvinienceCharge;
-            ThreeDCharge = StaticData.ThreeDCharge;
-            TotalCost = ticket.Price + ConvinienceCharge + ThreeDCharge;
+            LocalTax = EntranceFee * (theater.LocalTax / 100);
+            VAT = (EntranceFee + FDF + LocalTax) * (theater.EntertainmentTax / 100);
+            ConvinienceCharge = (theater.ConvinienceCharge);
+            ThreeDCharge = theater.ThreeDCharge;
+            TotalCost = ticketDetail.Price + ConvinienceCharge + ThreeDCharge;
 
             if (StaticData.IsComplimentary)
             {
@@ -262,20 +267,20 @@ namespace PosPrinterApp
                                             string printText = string.Empty;
                                             string printVText = string.Empty;
 
-                                            using (Image Logo = Utilities.ResizeImage(Image.FromFile(StaticData.LogoPath), new Size(160, 50)))
+                                            using (Image Logo = Utilities.ResizeImage(Image.FromFile(theater.LogoPath), new Size(160, 50)))
                                             {
                                                 x = X_Image_Center_Point(Logo);
                                                 e.Graphics.DrawImage(Logo, x, y);
                                                 y += Logo.Height + 5;
                                             }
-                                            printText = PrintDetail.CompanyName.Trim();
+                                            printText = theater.Title.Trim();
                                             printTextSize = StringSize(e.Graphics, printText, HEAD_BOLD);
                                             x = X_Text_Center_Point(printTextSize);
                                             e.Graphics.DrawString(printText, HEAD_BOLD, brush, x, y);
                                             lineSpace = printTextSize.Height;
                                             y += lineSpace - 5;
 
-                                            printText = PrintDetail.Address.Trim();
+                                            printText = theater.Address.Trim();
                                             printTextSize = StringSize(e.Graphics, printText, HEAD_SMALL);
                                             x = X_Text_Center_Point(printTextSize);
                                             e.Graphics.DrawString(printText, HEAD_SMALL, brush, x, y);
@@ -319,7 +324,7 @@ namespace PosPrinterApp
                                             x += printTextSize.Width;
 
                                             //y -= 5;
-                                            printText = PrintDetail.VatNo.Trim();
+                                            printText = theater.VatNo.Trim();
                                             x += 1;
                                             printTextSize = StringSize(e.Graphics, printText, LABEL_BOLD);
                                             e.Graphics.DrawString(printText, LABEL_BOLD, brush, x, y);
@@ -349,7 +354,7 @@ namespace PosPrinterApp
                                             x += printTextSize.Width;
 
                                             y -= 5;
-                                            printText = ticket.Title.Trim() + (ticket.IsThreeD.Equals("1") ? " (3D)" : " (2D)");
+                                            printText = ticketDetail.Movie.Trim() + (ticketDetail.IsThreeD.Equals(true) ? " (3D)" : " (2D)");
                                             x += 1;
                                             printTextSize = StringSize(e.Graphics, printText, HEAD_FOCUS);
                                             e.Graphics.DrawString(printText, HEAD_FOCUS, brush, x, y);
@@ -366,7 +371,7 @@ namespace PosPrinterApp
                                             x += printTextSize.Width;
 
                                             y -= 5;
-                                            printText = ticket.Screen.Trim();
+                                            printText = ticketDetail.Screen.Trim();
                                             x += 1;
                                             printTextSize = StringSize(e.Graphics, printText, HEAD_FOCUS);
                                             e.Graphics.DrawString(printText, HEAD_FOCUS, brush, x, y);
@@ -374,7 +379,7 @@ namespace PosPrinterApp
                                             #endregion
 
                                             #region TicketType
-                                            printText = ticket.TicketType.Trim();
+                                            printText = ticketDetail.TicketType.Trim();
                                             printTextSize = StringSize(e.Graphics, printText, HEAD_FOCUS);
                                             x = X_Text_Right_Point(printTextSize);
                                             e.Graphics.DrawString(printText, HEAD_FOCUS, brush, x, y);
@@ -445,13 +450,13 @@ namespace PosPrinterApp
                                             e.Graphics.DrawString(printText, LABEL, brush, x, y);
                                             x += printTextSize.Width;
 
-                                            printText = Convert.ToDateTime(ticket.ShowDate).ToString("MMM-dd-yyyy");
+                                            printText = Convert.ToDateTime(ticketDetail.ShowDate).ToString("MMM-dd-yyyy");
                                             x += 1;
                                             e.Graphics.DrawString(printText, LABEL_BOLD, brush, x, y);
                                             #endregion
 
                                             #region Time
-                                            printText = Convert.ToDateTime(ticket.Time).ToString("hh:mm tt");
+                                            printText = Convert.ToDateTime(ticketDetail.StartTime).ToString("hh:mm tt");
                                             printTextSize = StringSize(e.Graphics, printText, LABEL_BOLD);
                                             x = X_Text_Right_Point(printTextSize);
                                             e.Graphics.DrawString(printText, LABEL_BOLD, brush, x, y);
@@ -489,11 +494,11 @@ namespace PosPrinterApp
                                             // End Labels
 
                                             // Values
-                                            string a = new string(Enumerable.Range(0, 1).Select(_ => (char)generator.Next('A', 'N')).ToArray());
-                                            generator.Next(1, 20).ToString("D2");
-                                            printText = a + generator.Next(1, 20).ToString("D2");
+                                            //string a = new string(Enumerable.Range(0, 1).Select(_ => (char)generator.Next('A', 'N')).ToArray());
+                                            //generator.Next(1, 20).ToString("D2");
+                                            //printText = a + generator.Next(1, 20).ToString("D2");
                                             x = leftMargin;
-                                            printTextSize = StringSize(e.Graphics, printText, LABEL_BOLD);
+                                            printTextSize = StringSize(e.Graphics, ticketDetail.SeatNo, LABEL_BOLD);
                                             e.Graphics.DrawString(printText, LABEL_BOLD, brush, x, y);
 
                                             //printText = "1";
@@ -542,7 +547,7 @@ namespace PosPrinterApp
                                             y += lineSpace;
                                             if (FDF > 0)
                                             {
-                                                printText = "FDF(" + (StaticData.BoxOfficeTax * 100).ToString("0") + "%): ";
+                                                printText = "FDF(" + (theater.BoxOfficeTax).ToString("0") + "%): ";
                                                 printVText = "Rs. " + FDF.ToString("0.00");
                                                 printTextSize = StringSize(e.Graphics, (printText + printVText), LABEL);
                                                 x = X_Text_Right_Point(printTextSize);
@@ -552,7 +557,7 @@ namespace PosPrinterApp
                                                 e.Graphics.DrawString(printVText, LABEL, brush, x, y);
                                                 y += lineSpace;
                                             }
-                                            printText = "SLET(" + (StaticData.LocalTax * 100).ToString("0") + "%): ";
+                                            printText = "SLET(" + (theater.LocalTax).ToString("0") + "%): ";
                                             printVText = "Rs. " + LocalTax.ToString("0.00");
                                             printTextSize = StringSize(e.Graphics, (printText + printVText), LABEL);
                                             x = X_Text_Right_Point(printTextSize);
@@ -562,7 +567,7 @@ namespace PosPrinterApp
                                             e.Graphics.DrawString(printVText, LABEL, brush, x, y);
                                             y += lineSpace;
 
-                                            printText = "VAT(" + (StaticData.EntertainmentTax * 100).ToString("0") + "%): ";
+                                            printText = "VAT(" + (theater.EntertainmentTax).ToString("0") + "%): ";
                                             printVText = "Rs. " + VAT.ToString("0.00");
                                             printTextSize = StringSize(e.Graphics, (printText + printVText), LABEL);
                                             x = X_Text_Right_Point(printTextSize);
@@ -574,7 +579,7 @@ namespace PosPrinterApp
 
 
                                             printText = "Total Cost: ";
-                                            printVText = "Rs. " + ticket.Price.ToString("0.00");
+                                            printVText = "Rs. " + ticketDetail.Price.ToString("0.00");
                                             printTextSize = StringSize(e.Graphics, (printText + printVText), LABEL);
                                             x = X_Text_Right_Point(printTextSize);
                                             e.Graphics.DrawString(printText, LABEL, brush, x, y);
@@ -808,10 +813,6 @@ namespace PosPrinterApp
 
         private void Ticket_NewPrintPage(object sender, PrintPageEventArgs e)
         {
-            //StaticData sd=new StaticData();
-            TicketDetails ticket = StaticData.lstTicket.Where(c => c.ID == StaticData.ID).First();
-
-            string printType = "qrcode";
             bool ApplyVatInComplementry = false;
 
             bool ApplyFDFInComplementry = false;
@@ -819,16 +820,16 @@ namespace PosPrinterApp
             bool EnableTaxRegistration = true;
             bool ShowLogoOnTicket = true;
 
-            float TotalCost = 0;
-            float EntranceFee = 0;
-            float FDF = 0;
-            float VAT = 0;
-            float LocalTax = 0;
-            float ThreeDCharge = 0;
-            float ConvinienceCharge = 0;
-            float discount = 0;
-
-            float tempTotal = 1000;
+            decimal TotalCost = 0;
+            decimal EntranceFee = 0;
+            decimal FDF = 0;
+            decimal VAT = 0;
+            decimal LocalTax = 0;
+            decimal ThreeDCharge = 0;
+            decimal ConvinienceCharge = 0;
+            decimal discount = 0;
+            
+            decimal tempTotal = 1000;
             TotalCost = 0;
             EntranceFee = 0;
             FDF = 0;
@@ -842,20 +843,20 @@ namespace PosPrinterApp
 
 
 
-            if (ticket.IsInternational.Equals("1"))
+            if (ticketDetail.IsInternational)
             {
-                EntranceFee = tempTotal / ((1 + StaticData.BoxOfficeTax + StaticData.LocalTax) * (1 + StaticData.EntertainmentTax));
-                FDF = EntranceFee * StaticData.BoxOfficeTax;
+                EntranceFee = tempTotal / ((1 + (theater.BoxOfficeTax/100) + (theater.LocalTax/100) * (1 + (theater.EntertainmentTax/100))));
+                FDF = EntranceFee * (theater.BoxOfficeTax/100);
             }
             else
             {
-                EntranceFee = tempTotal / ((1 + StaticData.EntertainmentTax) * (1 + StaticData.LocalTax));
+                EntranceFee = tempTotal / ((1 + (theater.EntertainmentTax/100)) * (1 + (theater.LocalTax / 100)));
             }
-            LocalTax = EntranceFee * StaticData.LocalTax;
-            VAT = (EntranceFee + FDF + LocalTax) * StaticData.EntertainmentTax;
-            ConvinienceCharge = StaticData.ConvinienceCharge;
-            ThreeDCharge = StaticData.ThreeDCharge;
-            TotalCost = ticket.Price + ConvinienceCharge + ThreeDCharge;
+            LocalTax = EntranceFee * (theater.LocalTax / 100);
+            VAT = (EntranceFee + FDF + LocalTax) * (theater.EntertainmentTax / 100);
+            ConvinienceCharge = theater.ConvinienceCharge;
+            ThreeDCharge = theater.ThreeDCharge;
+            TotalCost = Convert.ToInt32(ticketDetail.Price) + ConvinienceCharge + ThreeDCharge;
 
             if (StaticData.IsComplimentary)
             {
@@ -889,7 +890,9 @@ namespace PosPrinterApp
             dirPath = Path.GetDirectoryName(dirPath);
             string appPath = dirPath;
             ImageHelper helper = new ImageHelper();
-            string barcode = "12345678912";
+            long minValue = 1000000000000;
+            long maxValue = 9999999999999;
+            string barcode = (minValue+(long)(new Random().NextDouble()*(maxValue-minValue))).ToString();
 
             //DirectoryInfo di = new DirectoryInfo(appPath + @"\CineUploadFiles\TicketCode\");
             //if (di.Exists) di.Delete(true);
@@ -898,7 +901,7 @@ namespace PosPrinterApp
 
 
             //LOGO
-            Image logo = Utilities.GetPrintLogo();
+            Image logo = Utilities.GetPrintLogo(theater.LogoPath);
             //logo = Utilities.ResizeImage(logo, new Size(180, 80), true);
             int logoHeight = logo.Height;
             if (ShowLogoOnTicket)
@@ -922,10 +925,10 @@ namespace PosPrinterApp
             float lineSpacing = 0;
             SizeF size = new SizeF();
 
-            if (PrintDetail.CompanyName != "" && PrintDetail.CompanyName != null)
+            if (theater.Title != "" && theater.Title != null)
             {
                 //HALL Company Name
-                printingText = PrintDetail.CompanyName.Trim();
+                printingText = theater.Title.Trim();
                 x = X_Point_Center(e.Graphics, printingText, BOLD_FONT);
                 size = GetStringSize(e.Graphics, printingText, BOLD_FONT);
                 y += size.Height - 4;
@@ -940,7 +943,7 @@ namespace PosPrinterApp
             //e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y);
 
             //HALL ADDRESS
-            printingText = PrintDetail.Address.Trim();
+            printingText = theater.Address.Trim();
             x = X_Point_Center(e.Graphics, printingText, SEMIBOLD_FONT);
             y += size.Height - 3;
             e.Graphics.DrawString(printingText, SEMIBOLD_FONT, brush, x, y);
@@ -974,7 +977,7 @@ namespace PosPrinterApp
             e.Graphics.DrawString(printingText, SEMIBOLD_FONT, brush, x, y);
 
             //VAT NO Header. Value
-            printingText = "Vat No. : " + PrintDetail.TheaterVatNo;
+            printingText = "Vat No. : " + theater.VatNo;
             x = X_Point_Right(e.Graphics, printingText, LightFont);
             e.Graphics.DrawString(printingText, LightFont, brush, x, y);
 
@@ -1006,7 +1009,7 @@ namespace PosPrinterApp
             y += lineSpacing;
             e.Graphics.DrawString(printingText, LightFont, brush, x, y);
             size = GetStringSize(e.Graphics, printingText + LeftMargin, LightFont);
-            printingText = printingText = ticket.Title.Trim() + (ticket.IsThreeD.Equals("1") ? " (3D)" : " (2D)");
+            printingText = printingText = ticketDetail.Movie.Trim() + (ticketDetail.IsThreeD.Equals(true) ? " (3D)" : " (2D)");
             x = size.Width;
             e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y - 3);
 
@@ -1051,11 +1054,11 @@ namespace PosPrinterApp
             y += lineSpacing;
             e.Graphics.DrawString(printingText, LightFont, brush, x, y);
             size = GetStringSize(e.Graphics, printingText + LeftMargin, LightFont);
-            printingText = ticket.Screen.Trim();
+            printingText = ticketDetail.Screen.Trim();
             x = size.Width;
             e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y - 2);
 
-            printingText = PrintDetail.TicketType.Trim();
+            printingText = ticketDetail.TicketType.Trim();
             x = X_Point_Right(e.Graphics, printingText, SEMIBOLD_FONT);
             //  size = GetStringSize(e.Graphics, printingText, SEMIBOLD_FONT);
             e.Graphics.DrawString(printingText, SEMIBOLD_FONT, brush, x, y);
@@ -1083,60 +1086,25 @@ namespace PosPrinterApp
             e.Graphics.DrawString(printingText, LightFont, brush, x, y);
             //Date
             //size = GetStringSize(e.Graphics, printingText + LeftMargin, LightFont);
-            printingText = ticket.ShowDate.Trim();
+            printingText = ticketDetail.ShowDate.ToShortDateString().Trim();
             x = LeftMargin;
             y += lineSpacing;
             e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y);
 
 
             //Time Value
-            printingText = ticket.Time;
+            printingText = ticketDetail.StartTime.ToShortTimeString();
             x = X_Point_Center(e.Graphics, printingText, BOLD_FONT);
             y += lineSpacing;
             e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y - 10);
-            //printingText = "Time : ";
-            //e.Graphics.DrawString(printingText, LightFont, brush, x, y);
-            //x = X_Point_Right(e.Graphics, printingText, LightFont);
-            //size = GetStringSize(e.Graphics, printingText + LeftMargin, LightFont);
-            //printingText = ticket.Time.ToString("HH:mm tt");
-            //x = size.Width;
-            //e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y);
-            //printingText = ticket.Time.ToString("HH:mm tt");
-            //x = X_Point_Right(e.Graphics, printingText, SEMIBOLD_FONT);
-            ////  size = GetStringSize(e.Graphics, printingText, SEMIBOLD_FONT);
-            //e.Graphics.DrawString(printingText, SEMIBOLD_FONT, brush, x, y);
-            //Type Name
-            //printingText = " Ticket Type : ";
-            //size = GetStringSize(e.Graphics, printingText, LightFont);
-            //e.Graphics.DrawString(printingText, SEMIBOLD_FONT, brush, x, y);
 
-            //Time Header
-            //printingText = "Time";
-            //x = X_Point_Center(e.Graphics, printingText, LightFont);
-            //e.Graphics.DrawString(printingText, LightFont, brush, x, y);
-
-            //Seat Number Header
-            //printingText = "Seat Number";
-            //x = X_Point_Right(e.Graphics, printingText, LightFont);
-            //e.Graphics.DrawString(printingText, LightFont, brush, x, y);
-
-            //Date Value
-            //printingText = ticket.ShowDate.ToString("MMM-dd-yyyy").Trim();
-            //x = LeftMargin;
-            //y += lineSpacing;
-            //e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y);
-
-            //Time Value
-            //printingText = ticket.Time.ToString("HH:mm tt");
-            //x = X_Point_Center(e.Graphics, printingText, BOLD_FONT);
-            //e.Graphics.DrawString(printingText, BOLD_FONT, brush, x, y);
 
             //Seat Number Value
-            //printingText = PrintDetail.SeatNo.Trim();
-            //x = X_Point_Right(e.Graphics, printingText, LARGE_BOLD_FONT) - 10;
-            //e.Graphics.DrawString(printingText, LARGE_BOLD_FONT, brush, x, y);
+            printingText = ticketDetail.SeatNo.Trim();
+            x = X_Point_Right(e.Graphics, printingText, LARGE_BOLD_FONT) - 10;
+            e.Graphics.DrawString(printingText, LARGE_BOLD_FONT, brush, x, y);
 
-            if (StaticData.ThreeDCharge > 0) y += 2.25F;
+            if (theater.ThreeDCharge > 0) y += 2.25F;
             else y += 3.5F;
 
 
@@ -1152,7 +1120,7 @@ namespace PosPrinterApp
             //{
             //    y += 20;
             //}
-            if (StaticData.PrintType == "qrcode")
+            if (theater.QRCode)
             {
                 img = Utilities.ResizeImage(img, new Size(200, 80), true);
                 x = X_Point_Left(e.Graphics, img) + 10;
@@ -1164,7 +1132,7 @@ namespace PosPrinterApp
             {
                 y += 25;
             }
-            if (!StaticData.EnableTaxRegistration)
+            if (!theater.EnableTaxRegistration)
             {
                 printingText = "Entrance Fee : Rs.";
             }
@@ -1173,7 +1141,7 @@ namespace PosPrinterApp
                 printingText = "Entrance Fee (Incl. Vat) : Rs.";
             }
 
-            if (StaticData.EnableTaxRegistration)
+            if (theater.EnableTaxRegistration)
                 printingText = printingText + (EntranceFee + VAT).ToString("0.00");
             else
                 printingText = printingText + EntranceFee.ToString("0.00");
@@ -1197,7 +1165,7 @@ namespace PosPrinterApp
             }
             if (FDF != 0)
             {
-                printingText = "FDF(" + (StaticData.BoxOfficeTax * 100).ToString("#") + "%): Rs." + FDF.ToString("0.00");
+                printingText = "FDF(" + (theater.BoxOfficeTax).ToString("#") + "%): Rs." + FDF.ToString("0.00");
                 y += lineSpacing;
                 x = X_Point_Right(e.Graphics, printingText, LightFont);
                 e.Graphics.DrawString(printingText, LightFont, brush, x, y);
@@ -1206,7 +1174,7 @@ namespace PosPrinterApp
 
             if (LocalTax != 0)
             {
-                printingText = "Local Tax(" + (StaticData.LocalTax * 100).ToString("#") + "%): Rs." + LocalTax.ToString("0.00");
+                printingText = "Local Tax(" + (theater.LocalTax).ToString("#") + "%): Rs." + LocalTax.ToString("0.00");
                 y += lineSpacing;
                 x = X_Point_Right(e.Graphics, printingText, LightFont);
                 e.Graphics.DrawString(printingText, LightFont, brush, x, y);
@@ -1230,7 +1198,7 @@ namespace PosPrinterApp
             //}
             if (VAT != 0 && !EnableTaxRegistration)
             {
-                printingText = "VAT(" + (StaticData.EntertainmentTax * 100).ToString("#") + "%): Rs." + VAT.ToString("0.00");
+                printingText = "VAT(" + (theater.EntertainmentTax).ToString("#") + "%): Rs." + VAT.ToString("0.00");
                 y += lineSpacing;
                 x = X_Point_Right(e.Graphics, printingText, LightFont);
                 e.Graphics.DrawString(printingText, LightFont, brush, x, y);
@@ -1245,7 +1213,7 @@ namespace PosPrinterApp
             if (TotalCost == 0)
             {
                 printingText = "COMPLIMENTARY";
-                if (StaticData.PrintType == "barcode")
+                if (!theater.QRCode)
                 {
                     y += lineSpacing + 00F;
                     x = X_Point_Center(e.Graphics, printingText, BOLD_FONT);
@@ -1258,7 +1226,7 @@ namespace PosPrinterApp
 
                 e.Graphics.DrawString(printingText, LARGE_BOLD_FONT, brush, x, y);
 
-                if (StaticData.PrintType == "barcode")
+                if (!theater.QRCode)
                     y += lineSpacing - 5.5F;
                 else
                     y += lineSpacing - 33.5F;
@@ -1266,7 +1234,7 @@ namespace PosPrinterApp
 
             //Bar Code
             // logo = objInfo.BarcodeImage;
-            if (printType == "barcode")
+            if (!theater.QRCode)
             {
                 BarcodeHelper objHelper = new BarcodeHelper();
                 Image barCodeImage = objHelper.GenerateBarCode(barcode);
@@ -1288,7 +1256,7 @@ namespace PosPrinterApp
             //}
 
             x = LeftMargin;
-            if (printType == "barcode" && TotalCost == 0 && ticket.IsThreeD == "3D")
+            if (!theater.QRCode && TotalCost == 0 && ticketDetail.IsThreeD)
                 y += 2.5F;
             else
                 y += 10.5F;
@@ -1312,11 +1280,11 @@ namespace PosPrinterApp
                 y += height;
             }
 
-            if (printType == "barcode" && TotalCost == 0 && ticket.IsThreeD != "3D")
+            if (!theater.QRCode && TotalCost == 0 && ticketDetail.IsThreeD)
                 y += 15.5F;
 
 
-            if (ticket.IsThreeD == "3D")
+            if (ticketDetail.IsThreeD)
             {
                 y += 0;
                 printingText = DataHolder.ThreeDMessage;
@@ -1329,11 +1297,11 @@ namespace PosPrinterApp
             if (ThreeDCharge == 0 && TotalCost > 0)
                 //y += logoHeight / 3 - 5.25F;
                 y += -3.5F;
-            else if (ThreeDCharge == 0 && TotalCost == 0 && printType == "barcode")
+            else if (ThreeDCharge == 0 && TotalCost == 0 && !theater.QRCode)
                 y += -3.0F;
-            else if (ThreeDCharge == 0 && TotalCost == 0 && ticket.IsThreeD != "3D")
+            else if (ThreeDCharge == 0 && TotalCost == 0 && ticketDetail.IsThreeD)
                 y += 21F;
-            else if (ThreeDCharge == 0 && TotalCost == 0 && ticket.IsThreeD == "3D")
+            else if (ThreeDCharge == 0 && TotalCost == 0 && ticketDetail.IsThreeD)
                 y += -1.5F;
             else
                 y += -3.5F;

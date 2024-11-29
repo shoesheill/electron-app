@@ -5,7 +5,7 @@ namespace PosPrinterApp.Helper
 {
     internal class StaticData
     {
-        public static string LogoPath="logo.png";
+        public static string LogoPath="c:\\databases\\logo.png";
         public static int TicketCount = 1;
         public static bool IsCCMS = false;
         public static int ID=1;

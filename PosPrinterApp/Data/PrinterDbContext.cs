@@ -21,6 +21,7 @@ public class PrinterDbContext:DbContext
     public DbSet<ScreenSeat> ScreenSeat { get; set; }
     public DbSet<TicketSeat> TicketSeat { get; set; }
     public DbSet<Transaction> Transaction { get; set; }
+    public DbSet<Theater> Theater { get; set; }
     //Disable Change Tracker
     public override int SaveChanges()=>throw new System.NotImplementedException();
 }

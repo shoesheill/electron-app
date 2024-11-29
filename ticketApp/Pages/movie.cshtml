@@ -31,12 +31,15 @@
 
 <div id="divSeatLayout">
     <div id="layout"></div>
+    <div>   <span class="totalPrice"></span></div>
     <div class="btnPrint hdn">
         <button id="btnPrint"> Purchase</button>
     </div>
 </div>
 @section Scripts {
     <script>
+        var ticketTypes;
+        let totalPrice=0;
     $(".movieshow").off().on("click",function (){
     $(".movieshow").removeClass("active")
     $(this).addClass("active");
@@ -46,13 +49,14 @@
     $("#btnPrint").off().on("click",function (){
             let $taregetEle=$("#divSeatLayout");
             if ($taregetEle.find("span.selected").length<1) return;
-            let seatIds="",showId=$taregetEle.find("table").attr("data-show");
+            let seatIds="",showId=$taregetEle.find("table").attr("data-show"),
+            totalPrice=$(".totalPrice").text();
             $.each($taregetEle.find("span.selected"),function (){
                 seatIds+=$(this).attr("data-id")+",";
             })
             seatIds=seatIds.slice(0,-1);
             $.ajax({
-                url: `/movie?handler=PurchaseTicket&showId=${showId}&seatIds=${seatIds}`,
+                url: `/movie?handler=PurchaseTicket&showId=${showId}&seatIds=${seatIds}&totalAmount=${parseInt(totalPrice)}`,
                 method: 'GET',
                 contentType: 'application/json',
                 success: function(data) {
@@ -76,12 +80,14 @@
             success: function(data) {
                 if (typeof(data.rows)=="undefined")
                     return;
+                    ticketTypes=data.ticketTypes;
+                    totalPrice=0;
                 let html=`<table data-show="${showId}"><tbody>`;
                 html+=`<div data-screen="${data.screen.id}" data-row="${data.screen.row}" data-col="${data.screen.column}" data-seats="${data.screen.seats}"><p>${data.screen.title}</p></div>`;
                 $.each(data.rows,function (index,row){
                     html+=`<tr data-row="${row.rowNo}">`;
                     $.each(row.seats, function (index,seat){
-                        html+=`<td data-col="${seat.colNo}"><span class="${seat.status.toLowerCase()}" data-id="${seat.id}">${(seat.seatNo)==null?"":seat.seatNo}</span></td>`;
+                        html+=`<td data-col="${seat.colNo}" data-t="${seat.ticketTypeId}"><span class="${seat.status.toLowerCase()}" data-id="${seat.id}">${(seat.seatNo)==null?"":seat.seatNo}</span></td>`;
                     });
                     html+=`</tr>`;
                 });
@@ -97,14 +103,26 @@
     }
     function registerClickEvent(){
         $(".available, .selected").off().on('click',function (){
-            let $this=$(this);            
-            if ($this.hasClass("available")) $this.removeClass("available").addClass("selected");
-            else $this.removeClass("selected").addClass("available");
-            if ($(".selected").length>0) $(".btnPrint").removeClass("hdn");
-            else $(".btnPrint").removeClass("hdn").addClass("hdn");
+            let $this=$(this);  
+            let ticketType=$this.closest("td").attr("data-t"),
+            ticketPrice = ticketTypes.filter(item => item.id === parseInt(ticketType))?.[0]?.price;         
+            if ($this.hasClass("available")){
+             $this.removeClass("available").addClass("selected");
+             totalPrice+=ticketPrice;
+             }
+            else{
+             $this.removeClass("selected").addClass("available");
+             totalPrice-=ticketPrice;
+             }
+            if ($(".selected").length>0) {
+            $(".btnPrint,.totalPrice").removeClass("hdn");
+            $(".totalPrice").text(totalPrice);
+            }
+            else $(".btnPrint,.totalPrice").removeClass("hdn").addClass("hdn");
         });
     }
-</script>
+
+    </script>
 }
 
 

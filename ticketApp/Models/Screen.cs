@@ -14,6 +14,9 @@ public class Screen
     public int Row { get; set; }
     public int Column { get; set; }
     public int Seats { get; set; }
+    [Display(AutoGenerateField = false)]
+    [JsonIgnore]
+    public ICollection<ScreenSeat> ScreenSeats { get; set; } = new HashSet<ScreenSeat>();
     // public displayorder Type { get; set; }
     // public rowdisplayorder Type { get; set; }
     // public colplayorder Type { get; set; }
@@ -27,4 +30,5 @@ public class Screen
     //public ICollection<ScreenSeats> ScreenSeats { get; set; }
 
     public override string ToString() => Title;
+    
 }

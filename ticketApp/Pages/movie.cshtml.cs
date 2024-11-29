@@ -49,6 +49,7 @@ public class movie : PageModel
         });
         string screenKey = $"Screen_{screenId}";
         string screenSeatsKey = $"ScreenSeats_{screenId}";
+        string ticketType = $"ticketType";
         // Step 1: Get screen details
         var screen = await _cache.GetOrCreateAsync(screenKey, async entry =>
         {
@@ -76,10 +77,16 @@ public class movie : PageModel
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
             return await _context.ScreenSeat
+                .Include(screenSeat => screenSeat.TicketType)
                 .Where(ss => ss.ScreenId == screenId)
                 .ToListAsync();
         });
-
+        var ticketTypes = await _cache.GetOrCreateAsync(ticketType, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            return await _context.TicketTypes
+            .ToListAsync();
+        });
         // Step 3: Get sold seat IDs for the specified show
         var soldSeatIds = await _cache.GetOrCreateAsync(soldSeatsKey, async entry =>
         {
@@ -101,6 +108,7 @@ public class movie : PageModel
                     seat.Id,
                     seat.SeatNo,
                     seat.ColNo,
+                    seat.TicketTypeId,
                     Status = soldSeatIds.Contains(seat.Id) ? "Sold" : "Available"
                 }).ToList()
             })
@@ -110,25 +118,27 @@ public class movie : PageModel
         var result = new
         {
             Screen = screen,
-            Rows = seatsGroupedByRow
+            Rows = seatsGroupedByRow,
+            TicketTypes = ticketTypes,
         };
 
         return new JsonResult(result);
     }
 
-    public async Task<JsonResult> OnGetPurchaseTicketAsync(string seatIds, int showId)
+    public async Task<JsonResult> OnGetPurchaseTicketAsync(string seatIds, int showId, int totalAmount)
     {
         // Split the Seat IDs into a list of integers
         var selectedSeatIds = seatIds
             .Split(',')
             .Select(int.Parse)
             .ToList();
-       int ticketPrice = await _context.Shows
-            .AsNoTracking()
-            .Include(show => show.TicketType)
-            .Where(show => show.Id == showId)
-            .Select(show => show.TicketType.Price)
-            .FirstOrDefaultAsync();
+        //int ticketPrice = 200;
+       // int ticketPrice = await _context.Shows
+       //      .AsNoTracking()
+       //      .Include(show => show.TicketType)
+       //      .Where(show => show.Id == showId)
+       //      .Select(show => show.TicketType.Price)
+       //      .FirstOrDefaultAsync();
 
         await using var transaction = await _context.Database.BeginTransactionAsync(); // Begin a transaction
 
@@ -138,7 +148,7 @@ public class movie : PageModel
             var newTransaction = new Transaction()
             {
                 PurchaseDate = DateTime.Now,
-                TotalAmount = ticketPrice * selectedSeatIds.Count // Calculate total price
+                TotalAmount = totalAmount
             };
 
             _context.Transaction.Add(newTransaction);
@@ -149,7 +159,7 @@ public class movie : PageModel
             {
                 TransactionId = newTransaction.Id,
                 ShowId = showId,
-                Price = ticketPrice
+                Price = totalAmount
             };
 
             _context.Ticket.Add(newTicket);

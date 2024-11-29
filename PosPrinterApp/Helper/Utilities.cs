@@ -56,10 +56,10 @@ namespace PosPrinterApp.Helper
             logo = Utilities.ResizeImage(logo, new Size(170, 100), true);
             return logo;
         }
-        public static Image GetPrintLogo()
+        public static Image GetPrintLogo(string logoPath)
         {
             string imageString = DataHolder.ImageString;
-            Image img = Image.FromFile(StaticData.LogoPath);
+            Image img = Image.FromFile(logoPath??StaticData.LogoPath);
             if (DataHolder.PrintLogo != null)
                 img = DataHolder.PrintLogo;
             img = Utilities.ResizeImage(img, new Size(220, 80), true);

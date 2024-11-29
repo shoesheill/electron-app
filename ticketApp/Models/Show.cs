@@ -16,11 +16,14 @@ public class Show
     public int MovieId { get; set; }
     [ForeignKey("MovieId")]
     public Movie Movie { get; set; }
+    [Display(AutoGenerateField = false)] 
     public int ScreenId { get; set; }
     [ForeignKey("ScreenId")]
     public Screen Screen { get; set; }
 
-    public int TicketTypeId { get; set; }
-    [ForeignKey("TicketTypeId")]
-    public TicketType TicketType { get; set; }
+    //[Display(AutoGenerateField = false)] 
+    //public int TicketTypeId { get; set; }
+    //[Display(AutoGenerateField = false)] 
+    //[ForeignKey("TicketTypeId")]
+   // public TicketType TicketType { get; set; }
 }

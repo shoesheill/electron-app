@@ -19,4 +19,6 @@ public class Show
     public int ScreenId { get; set; }
     [ForeignKey("ScreenId")]
     public Screen Screen { get; set; }
+    public TicketType TicketType { get; set; }
+    public int TicketTypeId { get; set; }
 }

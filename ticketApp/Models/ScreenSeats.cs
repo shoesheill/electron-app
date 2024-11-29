@@ -13,6 +13,8 @@ public class ScreenSeat
     [ForeignKey("ScreenId")]
     public Screen Screen { get; set; }
     public int RowNo { get; set; }
+    public string RowName { get; set; }
+    public bool IsActive { get; set; }
     public int ColNo { get; set; }
     // public int RowId { get; set; }
     // public Rows Row { get; set; }
