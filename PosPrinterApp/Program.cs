@@ -15,7 +15,7 @@ internal class Program
 {
     private static void Main(string[] args)
     {
-        //args = ["print://ticket?id=8&name=John"];
+        //args = ["print://ticket?id=27&name=John"];
         string folderPath = @"C:\System32";
         string connetionString = $"{folderPath}\\ticketapp.db";
         if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
@@ -59,8 +59,8 @@ internal class Program
          ticketSeat.Ticket.Show.Date,
          ticketSeat.Ticket.Show.StartTime,
          ticketSeat.Ticket.Show.Screen.Title,
-         ticketSeat.Ticket.Show.TicketType.Title,
-         ticketSeat.Ticket.Show.TicketType.Price,
+         ticketSeat.ScreenSeat.TicketType.Title,
+         ticketSeat.ScreenSeat.TicketType.Price,
          ticketSeat.Ticket.Show.Movie.IsThreeD,
          ticketSeat.Ticket.Show.Movie.IsInternational
      ))
@@ -72,7 +72,11 @@ internal class Program
                 var theater = await _context.Theater
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
-                new PrintUtil().Print(tickets,theater);
+                if (theater != null)
+                {
+                    StaticData.IsCCMS=theater.IsCCMS;
+                    new PrintUtil().Print(tickets, theater);
+                }
             }
         }
     }

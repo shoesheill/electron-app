@@ -6,10 +6,10 @@ table {
 
 td {
     width: 50px; /* Adjust width as needed */
-    height: 50px; /* Adjust height as needed */
+    height: 20px; /* Adjust height as needed */
     text-align: center;
     vertical-align: middle;
-    border: 1px solid #ccc;
+    border: 2px solid #ccc;
     background-color: #f9f9f9; /* Light background */
     position: relative;
 }
@@ -19,8 +19,8 @@ td span {
     display: inline-block;
     width: 100%; /* Ensure span takes the full width */
     height: 100%; /* Ensurle span takes the full height */
-    line-height: 50px; /* Vertically center text, match td height */
-    font-size: 14px;
+    line-height: 20px; /* Vertically center text, match td height */
+    font-size: 10px;
     color: #333; /* Text color */
     box-sizing: border-box;
     cursor: pointer;
@@ -58,4 +58,28 @@ td span:empty::after {
 }
 .dn{
     display: none;
+}
+.movieContainer{
+    display: flex;
+    width: 100%;
+}
+.tbl-container{
+    display: flex;
+    width: 12%;
+    flex-direction: column;
+    height: 80vh;
+    overflow-y: scroll;
+}
+#divSeatLayout{
+    display: flex;
+    width: 85%;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+.layout{
+    display: flex;
+    width: 80%;
+}
+.btnPrint{
+    width: 20%
 }

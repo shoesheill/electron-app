@@ -30,7 +30,7 @@ public class movie : PageModel
         Movies = await _context.Movies
             .AsNoTracking()
             .Include(movie => movie.Shows)
-            .Where(movie => movie.Shows.Any(show => show.Date == currentDate && show.StartTime > currentTime))
+            .Where(movie => movie.Shows.Any(show => show.Date>=currentDate && show.StartTime > currentTime))
             .ToListAsync();
     }
 

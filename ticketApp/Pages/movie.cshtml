@@ -11,6 +11,7 @@
 @{
     ViewData["Title"] = "Movie";
 }
+<div class="movieContainer">
 <div class="tbl-container">
 @foreach (var movie in Model.Movies)
 {
@@ -19,22 +20,23 @@
     @foreach (var show in @movie.Shows)
     {
          <div class="movieshow tbl-column" data-show="@show.Id">
-            <h3>@movie.Title</h3>
-            <h5>@show.StartTime</h5>
-            <h6>@show.Screen</h6>
+             <h5>@movie.Title</h5>
+             <span>@show.Date.ToShortDateString()</span>
+            <span>@show.StartTime</span>
+            <span>@show.Screen</span>
             </div>
     }
    
 }
 </div>
-
-
 <div id="divSeatLayout">
     <div id="layout"></div>
-    <div>   <span class="totalPrice"></span></div>
+    
     <div class="btnPrint hdn">
+        <div>   <span class="totalPrice"></span></div>
         <button id="btnPrint"> Purchase</button>
     </div>
+</div>
 </div>
 @section Scripts {
     <script>
@@ -60,6 +62,7 @@
                 method: 'GET',
                 contentType: 'application/json',
                 success: function(data) {
+                debugger
                     if (typeof(data)=="undefined")
                     return;
                     window.location.href=`print://ticket?id=${data.id}`;
